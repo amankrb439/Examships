@@ -2,14 +2,17 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Question, QuizConfig } from '../types';
 
-// AI instance initialization helper
+/**
+ * AI Instance Initialization
+ * Always use process.env.API_KEY as strictly required by the system.
+ */
 const getAI = () => {
-  // Try to get from process.env (Node/Vite) or import.meta.env
-  const apiKey = (typeof process !== 'undefined' ? process.env.API_KEY : null) || (import.meta as any).env?.VITE_API_KEY;
+  // Use a global access pattern that works across build tools
+  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : (window as any).process?.env?.API_KEY;
   
   if (!apiKey || apiKey === "undefined") {
-    console.error("API_KEY is missing. Please set it in Netlify Environment Variables.");
-    // Return a dummy instance or handle gracefully
+    console.warn("API_KEY not found in process.env. Ensure it is set in Vercel Environment Variables.");
+    // Fallback to avoid complete crash during boot, will error only on API call
     throw new Error("Missing API Key");
   }
   return new GoogleGenAI({ apiKey });
@@ -20,7 +23,7 @@ export const extractChaptersFromContext = async (context: string): Promise<strin
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Extract chapters from: ${context.substring(0, 5000)}`,
+      contents: `Extract chapters from this context: ${context.substring(0, 5000)}`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -31,14 +34,17 @@ export const extractChaptersFromContext = async (context: string): Promise<strin
     });
     return JSON.parse(response.text || "[]");
   } catch (error) {
-    return ["General Module 1", "PYQ Practice"];
+    console.error("Extract Chapters Error:", error);
+    return ["General Module 1", "Revision Set", "PYQ Practice"];
   }
 };
 
 export const generateQuizQuestions = async (config: QuizConfig, context?: string): Promise<Question[]> => {
   try {
     const ai = getAI();
-    const prompt = `Create ${config.questionCount} Hindi MCQs for topic: ${config.topic}. Return JSON array.`;
+    const prompt = `Act as an expert examiner. Generate ${config.questionCount} high-quality Multiple Choice Questions in Hindi for the topic: "${config.topic}". 
+    Focus on NCERT patterns and previous year competitive exams. 
+    Ensure the JSON matches the schema exactly.`;
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -64,7 +70,7 @@ export const generateQuizQuestions = async (config: QuizConfig, context?: string
 
     return JSON.parse(response.text || "[]");
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini Question Generation Error:", error);
     throw error;
   }
 };

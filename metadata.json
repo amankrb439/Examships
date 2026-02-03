@@ -1,5 +1,5 @@
 {
-  "name": "ExamShip Elite - Netlify Edition",
-  "description": "High-performance exam preparation platform deployed on Netlify, featuring AI quizzes and NCERT focus.",
+  "name": "ExamShip Elite - Vercel Edition",
+  "description": "Premium exam preparation platform with AI-powered Hindi MCQs, Leaderboards, and Performance Analytics.",
   "requestFramePermissions": []
 }
